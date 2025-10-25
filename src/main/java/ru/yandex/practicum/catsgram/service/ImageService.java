@@ -103,7 +103,7 @@ public class ImageService {
     private Path saveFile(MultipartFile file, Post post) {
         try {
             // формирование уникального названия файла на основе текущего времени и расширения оригинального файла
-            String uniqueFileName = String.format("d.%s", Instant.now().toEpochMilli(),
+            String uniqueFileName = String.format("%d.%s", Instant.now().toEpochMilli(),
                     StringUtils.getFilenameExtension(file.getOriginalFilename()));
 
             // формирование пути для сохранения файла с учётом идентификаторов автора и поста
