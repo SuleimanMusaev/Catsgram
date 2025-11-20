@@ -1,77 +1,61 @@
 package ru.yandex.practicum.catsgram.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import ru.yandex.practicum.catsgram.dal.UserRepository;
+import ru.yandex.practicum.catsgram.dto.userdto.NewUserRequest;
+import ru.yandex.practicum.catsgram.dto.userdto.UpdateUserRequest;
+import ru.yandex.practicum.catsgram.dto.userdto.UserDto;
 import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.DuplicatedDataException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
+import ru.yandex.practicum.catsgram.mapper.UserMapper;
 import ru.yandex.practicum.catsgram.model.User;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
-    private final Map<Long, User> users = new HashMap<>();
+    private final UserRepository userRepository;
 
-    public Collection<User> getAllUsers() {
-        return users.values();
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public User create(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
+    public UserDto createUser(NewUserRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new ConditionsNotMetException("Имейл должен быть указан");
         }
 
-        if (users.containsValue(user)) {
-            throw new DuplicatedDataException("Этот имейл уже используется");
+        Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
+        if (alreadyExistUser.isPresent()) {
+            throw new DuplicatedDataException("Данный имейл уже используется");
         }
 
-        user.setId(getNextId());
-        user.setRegistrationDate(Instant.now());
-        users.put(user.getId(), user);
-        return user;
+        User user = UserMapper.mapToUser(request);
+        user = userRepository.save(user);
+
+        return UserMapper.mapToUserDto(user);
     }
 
-    public User update(User newUser) {
-        if (newUser.getId() == null) {
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
-        if (users.containsKey(newUser.getId())) {
-            User oldUser = users.get(newUser.getId());
-            if (newUser.getEmail() != null &&
-                    !oldUser.getEmail().equalsIgnoreCase(newUser.getEmail())) {
-                if (users.containsValue(newUser)) {
-                    throw new DuplicatedDataException("Данный имейл уже используется");
-                }
-                oldUser.setEmail(newUser.getEmail());
-            }
-            if (newUser.getUsername() != null && !newUser.getUsername().isBlank()) {
-                oldUser.setUsername(newUser.getUsername());
-            }
-            if (newUser.getPassword() != null && !newUser.getPassword().isBlank()) {
-                oldUser.setPassword(newUser.getPassword());
-            }
-            return oldUser;
-        }
-        throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
+    public UserDto getUserById(long userId) {
+        return userRepository.findById(userId)
+                .map(UserMapper::mapToUserDto)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден с ID: " + userId));
     }
 
-
-    public Optional<User> findUserById(long userId) {
-        return Optional.ofNullable(users.get(userId));
+    public UserDto updateUser(long userId, UpdateUserRequest request) {
+        User updatedUser = userRepository.findById(userId)
+                .map(user -> UserMapper.updateUserFields(user, request))
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        updatedUser = userRepository.update(updatedUser);
+        return UserMapper.mapToUserDto(updatedUser);
     }
 
-    private long getNextId() {
-        long currentMaxId = users.values()
+    public List<UserDto> getUsers() {
+        return userRepository.findAll()
                 .stream()
-                .mapToLong(u -> u.getId() != null ? u.getId() : 0)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 }

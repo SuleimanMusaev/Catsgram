@@ -11,35 +11,37 @@ import ru.yandex.practicum.catsgram.exception.ParameterNotValidException;
 
 @RestControllerAdvice
 public class ErrorHandler {
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleIncorrectParameterException(final ParameterNotValidException e) {
+        return new ErrorResponse(
+                String.format("Некорректное значение параметра %s: %s", e.getParameter(), e.getReason())
+        );
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ErrorResponse handleConditionsNotMetException(final ConditionsNotMetException e) {
+        return new ErrorResponse(e.getMessage());
+    }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse notFoundException(NotFoundException e) {
+    public ErrorResponse handleNotFoundException(final NotFoundException e) {
         return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse duplicatedDataException(DuplicatedDataException e) {
+    public ErrorResponse handleDuplicatedDataException(final DuplicatedDataException e) {
         return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ErrorResponse conditionsNotMetException(ConditionsNotMetException e) {
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse parameterNotValidException(ParameterNotValidException e) {
-        return new ErrorResponse(String.format("Некорректное значение параметра %s: %s",
-                e.getParameter(), e.getReason()));
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleThrowable(Throwable e) {
-        return new ErrorResponse("Произошла непредвиденная ошибка.");
+    public ErrorResponse handleThrowable(final Throwable ignored) {
+        return new ErrorResponse(
+                "Произошла непредвиденная ошибка."
+        );
     }
 }

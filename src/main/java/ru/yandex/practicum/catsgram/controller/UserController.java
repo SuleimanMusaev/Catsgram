@@ -1,46 +1,41 @@
 package ru.yandex.practicum.catsgram.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.catsgram.model.User;
+import ru.yandex.practicum.catsgram.dto.userdto.NewUserRequest;
+import ru.yandex.practicum.catsgram.dto.userdto.UpdateUserRequest;
+import ru.yandex.practicum.catsgram.dto.userdto.UserDto;
 import ru.yandex.practicum.catsgram.service.UserService;
 
-import java.util.Collection;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/users")
 public class UserController {
     private final UserService userService;
 
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserDto createUser(@RequestBody NewUserRequest userRequest) {
+        return userService.createUser(userRequest);
+    }
+
+    @PutMapping("/{userId}")
+    public UserDto updateUser(@PathVariable("userId") long userId, @RequestBody UpdateUserRequest request) {
+        return userService.updateUser(userId, request);
     }
 
     @GetMapping
-    public Collection<User> getUsers() {
-        return userService.getAllUsers();
+    @ResponseStatus(HttpStatus.OK)
+    public List<UserDto> getUsers() {
+        return userService.getUsers();
     }
 
-    @GetMapping("{userId}")
-    public Optional<User> findUserById(@PathVariable long userId) {
-        return userService.findUserById(userId);
-    }
-
-    @PostMapping
-    public ResponseEntity<User> create(@RequestBody User user) {
-        User createdUser = userService.create(user);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED) // указываем код статуса
-                .body(createdUser); // указываем тело ответа — эта операция завершает создание ResponseEntity
-    }
-
-    @PutMapping
-    public User update(@RequestBody User newUser) {
-        return userService.update(newUser);
+    @GetMapping("/{userId}")
+    @ResponseStatus(HttpStatus.OK)
+    public UserDto getUserById(@PathVariable("userId") long userId) {
+        return userService.getUserById(userId);
     }
 }
